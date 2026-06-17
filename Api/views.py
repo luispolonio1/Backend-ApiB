@@ -1,10 +1,11 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
-
+from django.utils import timezone
 from .models import Red, Rio,NodoMetric,Nodo
-from .serializers import RedSerializer, RioSerializer,NodoSerializer,NodoMetricWriteSerializer
+from .serializers import RedSerializer, RioSerializer,NodoSerializer,NodoMetricWriteSerializer,MotorCommandSerializer,MotorCommand
 
+from rest_framework import generics
 
 @api_view(['GET', 'POST'])
 def redes(request):
@@ -66,3 +67,52 @@ def actualizar_metrica(request, nodo_id):
         )
 
     return Response(serializer.errors, status=400)
+
+
+class CreateCommandView(generics.CreateAPIView):
+
+    """POST /api/motor/command/  -> alguien encola una orden"""
+
+    serializer_class = MotorCommandSerializer
+
+
+
+class PendingCommandView(generics.ListAPIView):
+
+    """GET /api/motor/command/pending/?device_id=esp32-01
+
+       El ESP32 lo llama, recibe la orden pendiente, y la marca como ejecutada."""
+
+    serializer_class = MotorCommandSerializer
+
+
+    def get_queryset(self):
+
+        device_id = self.request.query_params.get("device_id")
+
+        return MotorCommand.objects.filter(
+
+            device_id=device_id, status="PENDING"
+
+        ).order_by("created_at")
+
+
+    def list(self, request, *args, **kwargs):
+
+        # Devuelve solo la orden más vieja y la marca como ejecutada (atómico simple)
+
+        qs = self.get_queryset()
+
+        cmd = qs.first()
+
+        if not cmd:
+
+            return Response({"command": None})
+
+        cmd.status       = "EXECUTED"
+
+        cmd.executed_at  = timezone.now()
+
+        cmd.save()
+
+        return Response({"command": MotorCommandSerializer(cmd).data})

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Nodo,NodoLocation,Red,Rio,NodoMetric
+from .models import Nodo,NodoLocation,Red,Rio,NodoMetric,MotorCommand
 from django.contrib.gis.geos import Point
 
 
@@ -121,3 +121,14 @@ class RioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rio
         fields = '__all__'
+
+
+class MotorCommandSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model  = MotorCommand
+
+        fields = ["id", "device_id", "action", "duration_ms", "status", "created_at"]
+
+        read_only_fields = ["id", "status", "created_at"]

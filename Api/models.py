@@ -72,3 +72,41 @@ class NodoLocation(models.Model):
     location = models.PointField()
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+class MotorCommand(models.Model):
+
+    ACTION_CHOICES = [
+
+        ("FORWARD",  "Adelante"),
+
+        ("BACKWARD", "Atrás"),
+
+        ("LEFT",     "Izquierda"),
+
+        ("RIGHT",    "Derecha"),
+
+        ("STOP",     "Detener"),
+
+    ]
+
+    STATUS_CHOICES = [
+
+        ("PENDING",   "Pendiente"),
+
+        ("EXECUTED",  "Ejecutado"),
+
+        ("FAILED",    "Falló"),
+
+    ]
+
+    device_id  = models.CharField(max_length=64, db_index=True)
+
+    action     = models.CharField(max_length=16, choices=ACTION_CHOICES)
+
+    duration_ms = models.IntegerField(default=1000)
+
+    status     = models.CharField(max_length=16, choices=STATUS_CHOICES, default="PENDING")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    executed_at = models.DateTimeField(null=True, blank=True)
