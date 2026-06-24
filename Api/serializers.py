@@ -33,7 +33,7 @@ class NodoLocationSerializer(serializers.ModelSerializer):
 class NodoSerializer(serializers.ModelSerializer):
 
     ultima_metrica = serializers.SerializerMethodField()
-    locations = NodoLocationSerializer(many=True, read_only=True)
+    locations = serializers.SerializerMethodField()
 
     # Campos que llegan en el POST
     ultima_metrica_input = NodoMetricWriteSerializer(
@@ -75,6 +75,14 @@ class NodoSerializer(serializers.ModelSerializer):
             'created_at': metric.created_at,
         }
 
+    def get_locations(self, obj):
+        location = obj.locations.order_by('-created_at').first()
+
+        if not location:
+            return []
+
+        return [NodoLocationSerializer(location).data]
+
     def create(self, validated_data):
 
         metrica_data = validated_data.pop(
@@ -106,7 +114,6 @@ class NodoSerializer(serializers.ModelSerializer):
 
         return nodo
     
-
 class RedSerializer(serializers.ModelSerializer):
 
     nodos = NodoSerializer(many=True, read_only=True)

@@ -2,10 +2,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from .models import Red, Rio,NodoMetric,Nodo
-from .serializers import RedSerializer, RioSerializer,NodoSerializer,NodoMetricWriteSerializer,MotorCommandSerializer,MotorCommand
+from .models import Red, Rio,NodoMetric,Nodo,NodoLocation
+from .serializers import RedSerializer, RioSerializer,NodoSerializer,NodoMetricWriteSerializer,MotorCommandSerializer,MotorCommand,NodoLocationWriteSerializer,NodoLocationSerializer
+from django.contrib.gis.geos import Point
 
-from rest_framework import generics
+from rest_framework import generics,status
 
 @api_view(['GET', 'POST'])
 def redes(request):
@@ -116,3 +117,25 @@ class PendingCommandView(generics.ListAPIView):
         cmd.save()
 
         return Response({"command": MotorCommandSerializer(cmd).data})
+
+
+class NodoLocationCreateView(generics.CreateAPIView):
+    serializer_class = NodoLocationWriteSerializer
+
+    def create(self, request, *args, **kwargs):
+        nodo = get_object_or_404(Nodo, id=self.kwargs['nodo_id'])
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        location = NodoLocation.objects.create(
+            nodo=nodo,
+            location=Point(
+                serializer.validated_data['longitude'],
+                serializer.validated_data['latitude'],
+            )
+        )
+
+        output_serializer = NodoLocationSerializer(location)
+        headers = self.get_success_headers(output_serializer.data)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
